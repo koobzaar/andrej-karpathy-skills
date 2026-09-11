@@ -1,170 +1,132 @@
-# Karpathy-Inspired Claude Code Guidelines
+# Karpathy-Inspired Coding Agent Guidelines
 
-> Check out my new project [Multica](https://github.com/multica-ai/multica) — an open-source platform for running and managing coding agents with reusable skills.
->
-> Follow me on X: [https://x.com/jiayuan_jy](https://x.com/jiayuan_jy)
+A compact set of behavioral guidelines for coding agents, based on [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) about common LLM coding failures.
 
-A single `CLAUDE.md` file to improve Claude Code behavior, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
+This fork keeps the original principles, removes integration-specific bloat, and adds explicit guidance for **subagent orchestration, model selection, context handoff, verification, and commits**.
 
-English | [简体中文](./README.zh.md)
+## Why This Fork
 
-## The Problems
+The original project primarily targeted Claude Code and duplicated the same guidance across plugin metadata, Cursor rules, documentation, examples, and translations.
 
-From Andrej's post:
+This fork focuses on the instructions themselves.
 
-> "The models make wrong assumptions on your behalf and just run along with them without checking. They don't manage their confusion, don't seek clarifications, don't surface inconsistencies, don't present tradeoffs, don't push back when they should."
+It removes the Claude/Cursor-specific packaging and expands the areas that matter for modern coding agents:
 
-> "They really like to overcomplicate code and APIs, bloat abstractions, don't clean up dead code... implement a bloated construction over 1000 lines when 100 would do."
+| Guideline                 | Purpose                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| **Think Before Coding**   | Avoid assumptions and surface meaningful ambiguity           |
+| **Simplicity First**      | Prevent overengineering and speculative abstractions         |
+| **Surgical Changes**      | Keep diffs scoped to the requested change                    |
+| **Goal-Driven Execution** | Turn work into verifiable outcomes                           |
+| **Subagents**             | Delegate only independent work and use the appropriate model |
+| **Commits**               | Keep changes cohesive and Git operations safe                |
 
-> "They still sometimes change/remove comments and code they don't sufficiently understand as side effects, even if orthogonal to the task."
+## Why Add Subagent Rules?
 
-## The Solution
+Subagents introduce a new class of failure that the original guidelines did not address.
 
-Four principles in one file that directly address these issues:
+OpenAI's current model guidance notes that models may **delegate less often than desired** unless explicitly told when and how to use subagents. GPT-5.6 supports multi-agent workflows, but good orchestration still depends on the instructions given to the parent agent.
 
-| Principle | Addresses |
-|-----------|-----------|
-| **Think Before Coding** | Wrong assumptions, hidden confusion, missing tradeoffs |
-| **Simplicity First** | Overcomplication, bloated abstractions |
-| **Surgical Changes** | Orthogonal edits, touching code you shouldn't |
-| **Goal-Driven Execution** | Leverage through tests-first, verifiable success criteria |
+I also noticed the opposite problem in practice: a **GPT-5.6 Sol parent spawning another GPT-5.6 Sol at high reasoning effort just to explore a codebase**.
 
-## The Four Principles in Detail
+That works, but it wastes expensive model capacity on a bounded task that a smaller model can handle.
 
-### 1. Think Before Coding
+The added rules therefore make delegation explicit:
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+* Keep **linear tasks** in the main agent: if `B` depends on `A`, do `A → B` instead of spawning both.
+* Delegate only genuinely independent work.
+* Do not assume a subagent should use the same model as its parent.
+* Give every subagent the exact **goal, relevant context, constraints, expected output, and verification criteria**.
+* Use the cheapest model that can reliably complete the task.
+* Keep the parent responsible for reviewing and integrating subagent results.
 
-LLMs often pick an interpretation silently and run with it. This principle forces explicit reasoning:
+### GPT-5.6 Model Routing
 
-- **State assumptions explicitly** — If uncertain, ask rather than guess
-- **Present multiple interpretations** — Don't pick silently when ambiguity exists
-- **Push back when warranted** — If a simpler approach exists, say so
-- **Stop when confused** — Name what's unclear and ask for clarification
+For bounded coding subtasks, this fork favors:
 
-### 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-Combat the tendency toward overengineering:
-
-- No features beyond what was asked
-- No abstractions for single-use code
-- No "flexibility" or "configurability" that wasn't requested
-- No error handling for impossible scenarios
-- If 200 lines could be 50, rewrite it
-
-**The test:** Would a senior engineer say this is overcomplicated? If yes, simplify.
-
-### 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-
-- Don't "improve" adjacent code, comments, or formatting
-- Don't refactor things that aren't broken
-- Match existing style, even if you'd do it differently
-- If you notice unrelated dead code, mention it — don't delete it
-
-When your changes create orphans:
-
-- Remove imports/variables/functions that YOUR changes made unused
-- Don't remove pre-existing dead code unless asked
-
-**The test:** Every changed line should trace directly to the user's request.
-
-### 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform imperative tasks into verifiable goals:
-
-| Instead of... | Transform to... |
-|--------------|-----------------|
-| "Add validation" | "Write tests for invalid inputs, then make them pass" |
-| "Fix the bug" | "Write a test that reproduces it, then make it pass" |
-| "Refactor X" | "Ensure tests pass before and after" |
-
-For multi-step tasks, state a brief plan:
-
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+```text
+Luna high/xhigh
+    ↓ escalate if needed
+Terra high/xhigh
+    ↓ escalate if needed
+Sol
 ```
 
-Strong success criteria let the LLM loop independently. Weak criteria ("make it work") require constant clarification.
+**GPT-5.6 Luna** is the default for focused work such as:
 
-## Install
+* codebase exploration;
+* locating definitions and call sites;
+* reading logs and tests;
+* documentation lookup;
+* mechanical analysis;
+* narrowly scoped reviews.
 
-**Option A: Claude Code Plugin (recommended)**
+Luna is substantially cheaper than Sol while still supporting high reasoning effort, making it a better default for well-specified subagents.
 
-From within Claude Code, first add the marketplace:
-```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
-```
+**GPT-5.6 Terra** is an optional middle tier when Luna is insufficient but Sol is unnecessary.
 
-Then install the plugin:
-```
-/plugin install andrej-karpathy-skills@karpathy-skills
-```
+**GPT-5.6 Sol** should be reserved for work that actually benefits from it:
 
-This installs the guidelines as a Claude Code plugin, making the skill available across all your projects.
+* architecture;
+* ambiguous debugging;
+* difficult implementation decisions;
+* cross-cutting changes;
+* synthesis of conflicting findings;
+* high-consequence work.
 
-**Option B: CLAUDE.md (per-project)**
+GPT-6 Astra is more naturally suited to long-horizon orchestration, but GPT-5.6 agents should not need Astra-style defaults to use subagents effectively. The instructions make the delegation strategy explicit.
 
-New project:
-```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
-```
+## Context Matters
 
-Existing project (append):
-```bash
-echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
-```
+A cheaper subagent is only useful when it receives enough context to solve the task.
 
-## Using with Cursor
+Delegation should look like:
 
-This repository includes a committed Cursor project rule ([`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc)) so the same guidelines apply when you open the project in Cursor. See **[CURSOR.md](CURSOR.md)** for setup, using the rule in other projects, and how this relates to Claude Code.
+```text
+Goal: [exact outcome]
 
-## Key Insight
+Context:
+- [relevant files/modules]
+- [known behavior]
+- [decisions already made]
 
-From Andrej:
+Constraints:
+- [scope boundaries]
+- [project rules]
+- [what must not change]
 
-> "LLMs are exceptionally good at looping until they meet specific goals... Don't tell it what to do, give it success criteria and watch it go."
+Output:
+- [exact result expected]
 
-The "Goal-Driven Execution" principle captures this: transform imperative instructions into declarative goals with verification loops.
-
-## How to Know It's Working
-
-These guidelines are working if you see:
-
-- **Fewer unnecessary changes in diffs** — Only requested changes appear
-- **Fewer rewrites due to overcomplication** — Code is simple the first time
-- **Clarifying questions come before implementation** — Not after mistakes
-- **Clean, minimal PRs** — No drive-by refactoring or "improvements"
-
-## Customization
-
-These guidelines are designed to be merged with project-specific instructions. Add them to your existing `CLAUDE.md` or create a new one.
-
-For project-specific rules, add sections like:
-
-```markdown
-## Project-Specific Guidelines
-
-- Use TypeScript strict mode
-- All API endpoints must have tests
-- Follow the existing error handling patterns in `src/utils/errors.ts`
+Verify:
+- [how success is checked]
 ```
 
-## Tradeoff Note
+Do not make subagents rediscover information the parent already knows, and do not dump the entire parent conversation into them when only a few facts matter.
 
-These guidelines bias toward **caution over speed**. For trivial tasks (simple typo fixes, obvious one-liners), use judgment — not every change needs the full rigor.
+The goal is **minimum sufficient context**.
 
-The goal is reducing costly mistakes on non-trivial work, not slowing down simple tasks.
+## Core Principle
+
+The common theme is simple:
+
+> Give coding agents a precise goal, constrain unnecessary behavior, and make success verifiable.
+
+The guidelines intentionally bias toward correctness, minimal changes, and verification over raw speed.
+
+For trivial tasks, use judgment.
+
+## Upstream Changes
+
+Compared with the original repository, this fork removes:
+
+* Claude Code plugin marketplace metadata;
+* Claude-specific project instructions;
+* Cursor-specific rules and documentation;
+* duplicated examples;
+* the translated README.
+
+The repository is now focused on the behavioral guidelines rather than maintaining multiple wrappers around the same content.
 
 ## License
 
