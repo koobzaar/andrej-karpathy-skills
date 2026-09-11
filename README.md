@@ -2,39 +2,32 @@
 
 # Karpathy-Inspired Coding Agent Guidelines
 
-**A personal fork for my ChatGPT 5.6 coding workflow: think first, change less, delegate intentionally, verify the result, and leave understandable Git history.**
+**Personal ChatGPT 5.6 coding rules optimized for `~/.codex/AGENTS.md`.**
 
-`GPT-5.6` · `multi-agent` · `coding agents` · `minimal diffs` · `linear commits`
+`GPT-5.6` · `Codex` · `subagents` · `minimal diffs` · `clean commits`
 
 </div>
 
 ---
 
-## About This Fork
+## Scope
 
-This is my personal fork of [`forrestchang/andrej-karpathy-skills`](https://github.com/forrestchang/andrej-karpathy-skills), adapted around how I use **ChatGPT 5.6 for software engineering**.
+This is my personal fork of [`forrestchang/andrej-karpathy-skills`](https://github.com/forrestchang/andrej-karpathy-skills), adapted for my **global Codex instructions**:
 
-The original project captures four useful rules inspired by [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) about common LLM coding failures:
+```text
+~/.codex/AGENTS.md
+```
 
-* **Think Before Coding**
-* **Simplicity First**
-* **Surgical Changes**
-* **Goal-Driven Execution**
+> [!IMPORTANT]
+> This is optimized for **personal, cross-project instructions loaded in every Codex session**.
+>
+> It is **not intended to replace repository-level `AGENTS.md` files**.
 
-I kept those principles and added rules for problems I encountered in day-to-day ChatGPT 5.6 usage:
+Project-specific rules should stay inside each repository's own `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, or equivalent documentation.
 
-* deciding when work is actually parallelizable;
-* using subagents without wasting model capability;
-* providing subagents with the context they need;
-* choosing between GPT-5.6 Luna, Terra, and Sol;
-* verifying delegated work before integration;
-* keeping commits cohesive, descriptive, and predictable.
-
-> [!NOTE]
-> This repository describes **my preferred workflow**. Model-routing and Git policies below are project conventions, not official OpenAI recommendations unless explicitly cited as such.
+This file should contain only behavior I want across essentially every coding task.
 
 ---
-
 ## What Changed
 
 | Area                 | This fork                                                            |
