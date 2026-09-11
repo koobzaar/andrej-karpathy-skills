@@ -4,7 +4,7 @@
 
 **Personal ChatGPT 5.6 coding rules optimized for `~/.codex/AGENTS.md`.**
 
-`GPT-5.6` · `Codex` · `subagents` · `minimal diffs` · `clean commits`
+`GPT-5.6` · `Codex` · `subagents` · `minimal diffs`
 
 </div>
 
@@ -37,9 +37,8 @@ This file should contain only behavior I want across essentially every coding ta
 | **Subagents**        | Adds explicit rules for when delegation is useful                    |
 | **Context handoff**  | Requires goal, context, constraints, output, and verification        |
 | **Model routing**    | Uses GPT-5.6 models according to subtask difficulty                  |
-| **Verification**     | Keeps the parent agent responsible for reviewing delegated work      |
-| **Commits**          | Requires cohesive commits with a useful subject and explanatory body |
-| **Repository scope** | Removes Claude/Cursor-specific packaging I do not use                |
+| **Verification**     | Keeps the parent agent responsible for reviewing delegated work |
+| **Repository scope** | Removes Claude/Cursor-specific packaging I do not use           |
 
 I removed:
 
@@ -235,136 +234,21 @@ The official model pages also document higher reasoning-effort options for the G
 
 ---
 
-## Commit Workflow
-
-The fork also codifies how I want coding agents to finish changes.
-
-The goal is not merely to produce a valid commit. The history should make it possible to understand **what changed, why it changed, and how it was verified before opening the diff**.
-
-### Commit Structure
-
-Use a short **commit subject** followed by a useful **commit body** for non-trivial changes.
-
-```text
-<type>: <imperative summary>
-
-<description of what changed and why>
-
-<important implementation or scope details>
-
-Validation:
-- <check performed>
-- <check performed>
-```
-
-Example:
-
-```text
-feat: add model-aware subagent routing
-
-Define linear and parallelizable task shapes and require explicit
-context handoff before spawning subagents.
-
-Default bounded exploration work to GPT-5.6 Luna instead of blindly
-matching the parent model. Reserve Sol for ambiguous, cross-cutting,
-or high-consequence tasks.
-
-Also document the distinction between observed model behavior,
-OpenAI-documented behavior, and project-specific orchestration policy.
-
-Validation:
-- reviewed guideline consistency
-- verified OpenAI-specific claims against official documentation
-```
-
-### Subject
-
-The subject should be concise and useful when scanning history.
-
-Use repository-specific formatting rules when they exist. Otherwise use:
-
-```text
-feat:
-fix:
-docs:
-test:
-refactor:
-build:
-ci:
-chore:
-```
-
-with an imperative summary:
-
-```text
-fix: preserve query strings during language selection
-```
-
-The subject answers:
-
-> **What kind of change is this, and what did it accomplish?**
-
-### Body
-
-For non-trivial commits, the body should summarize the change well enough that someone can understand its intent and scope **without reading the implementation first**.
-
-It should answer, when relevant:
-
-* **What changed?**
-* **Why was it necessary?**
-* **What important design or behavioral decisions were made?**
-* **What part of the repository is affected?**
-* **What was deliberately left unchanged?**
-* **How was the result verified?**
-
-Do not merely restate the subject.
-
-Do not narrate the diff line by line.
-
-Prefer a concise description of the **behavioral change and reasoning behind it**.
-
-> [!TIP]
-> Think of the commit body as the index to the diff: after reading it, you should know what to look for and why those changes exist.
-
-For trivial changes, such as a typo or obvious one-line fix, a subject alone is sufficient.
-
-### Git Rules
-
-* Only commit changes related to the current task.
-* Keep commits self-contained.
-* Preserve a linear history.
-* Always specify the remote and branch when pushing:
-
-```bash
-git push origin <branch>
-```
-
-* Do not run `git log`, `rebase`, `merge`, or `force push` by default.
-* Do not include unrelated working-tree changes.
-* Do not commit test captures, temporary logs, generated `dist/` output, or unrelated binaries unless the repository explicitly requires them.
-
-Repository-specific instructions in `AGENTS.md`, `CLAUDE.md`, or equivalent documentation take precedence.
-
-The agent should not rewrite history or perform broader repository maintenance merely because it has access to Git.
-
----
-
 ## The Guidelines
 
 The resulting behavioral model is:
 
-| Principle                 | Prevents                                                     |
-| ------------------------- | ------------------------------------------------------------ |
-| **Think Before Coding**   | Silent assumptions and hidden uncertainty                    |
-| **Simplicity First**      | Overengineering and speculative abstraction                  |
-| **Surgical Changes**      | Drive-by refactors and unrelated edits                       |
-| **Goal-Driven Execution** | Vague completion criteria                                    |
-| **Subagents**             | Bad decomposition, missing context, wasted model capability  |
-| **Commits**               | Opaque history, unrelated changes, and unsafe Git operations |
+| Principle                 | Prevents                                                    |
+| ------------------------- | ----------------------------------------------------------- |
+| **Think Before Coding**   | Silent assumptions and hidden uncertainty                   |
+| **Simplicity First**      | Overengineering and speculative abstraction                 |
+| **Surgical Changes**      | Drive-by refactors and unrelated edits                      |
+| **Goal-Driven Execution** | Vague completion criteria                                   |
+| **Subagents**             | Bad decomposition, missing context, wasted model capability |
 
 The overall rule:
 
-> **Give the agent a precise goal, enough context to solve it, clear scope boundaries, and a verifiable definition of success — then leave a commit that explains what was accomplished.**
+> **Give the agent a precise goal, enough context to solve it, clear scope boundaries, and a verifiable definition of success.**
 
 ---
 
