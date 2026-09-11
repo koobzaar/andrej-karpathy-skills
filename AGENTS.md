@@ -170,11 +170,23 @@ Push code safely:
 
 If commit formatting instructions exist in `AGENTS.md`, `CLAUDE.md`, or repository documentation, follow them strictly.
 
-Otherwise use `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, or `chore:` with a descriptive imperative summary, such as:
+Otherwise use `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, or `chore:` with a descriptive imperative subject.
+
+For non-trivial commits, add a concise body explaining **what changed, why, important decisions, and how it was verified**. It should let someone understand the change before reading the diff. Do not narrate implementation line by line.
 
 ```text
-fix: preserve query strings during language selection
+feat: add model-aware subagent routing
+
+Route bounded exploration to Luna instead of matching the parent model.
+Keep Sol for ambiguous or consequential work, and require explicit
+context and verification when delegating.
+
+Validation:
+- reviewed delegation rules
+- verified model-specific claims
 ```
+
+A subject alone is sufficient for trivial changes.
 
 Keep commits cohesive and self-contained.
 

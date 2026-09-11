@@ -2,31 +2,53 @@
 
 # Karpathy-Inspired Coding Agent Guidelines
 
-**Small behavioral rules for coding agents: think first, change less, verify the result, and delegate intentionally.**
+**A personal fork for my ChatGPT 5.6 coding workflow: think first, change less, delegate intentionally, verify the result, and leave understandable Git history.**
 
-`GPT-5.6` · `multi-agent` · `coding agents` · `minimal diffs` · `MIT`
+`GPT-5.6` · `multi-agent` · `coding agents` · `minimal diffs` · `linear commits`
 
 </div>
 
 ---
 
-## What This Fork Changes
+## About This Fork
 
-The original project packaged four useful rules for reducing common LLM coding mistakes.
+This is my personal fork of [`forrestchang/andrej-karpathy-skills`](https://github.com/forrestchang/andrej-karpathy-skills), adapted around how I use **ChatGPT 5.6 for software engineering**.
 
-This fork keeps that core, removes tool-specific duplication, and extends the guidelines for **modern multi-agent coding workflows**.
+The original project captures four useful rules inspired by [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) about common LLM coding failures:
 
-| Area                    | Change                                                                                 |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| **Core guidelines**     | Preserve the original Think / Simplicity / Surgical / Goal-Driven principles           |
-| **Task classification** | Distinguish trivial, linear, and parallelizable work                                   |
-| **Subagents**           | Define when delegation helps and when it only adds coordination                        |
-| **Context handoff**     | Require an explicit goal, relevant context, constraints, output, and verification      |
-| **Model routing**       | Match GPT-5.6 model capability to the delegated task instead of cloning the root model |
-| **Git discipline**      | Add cohesive commit and safe-push rules                                                |
-| **Repository scope**    | Remove Claude/Cursor-specific wrappers and duplicated documentation                    |
+* **Think Before Coding**
+* **Simplicity First**
+* **Surgical Changes**
+* **Goal-Driven Execution**
 
-The following integration-specific files were removed:
+I kept those principles and added rules for problems I encountered in day-to-day ChatGPT 5.6 usage:
+
+* deciding when work is actually parallelizable;
+* using subagents without wasting model capability;
+* providing subagents with the context they need;
+* choosing between GPT-5.6 Luna, Terra, and Sol;
+* verifying delegated work before integration;
+* keeping commits cohesive, descriptive, and predictable.
+
+> [!NOTE]
+> This repository describes **my preferred workflow**. Model-routing and Git policies below are project conventions, not official OpenAI recommendations unless explicitly cited as such.
+
+---
+
+## What Changed
+
+| Area                 | This fork                                                            |
+| -------------------- | -------------------------------------------------------------------- |
+| **Core behavior**    | Keeps the original Karpathy-inspired principles                      |
+| **Task structure**   | Defines trivial, linear, and parallelizable work                     |
+| **Subagents**        | Adds explicit rules for when delegation is useful                    |
+| **Context handoff**  | Requires goal, context, constraints, output, and verification        |
+| **Model routing**    | Uses GPT-5.6 models according to subtask difficulty                  |
+| **Verification**     | Keeps the parent agent responsible for reviewing delegated work      |
+| **Commits**          | Requires cohesive commits with a useful subject and explanatory body |
+| **Repository scope** | Removes Claude/Cursor-specific packaging I do not use                |
+
+I removed:
 
 ```text
 .claude-plugin/marketplace.json
@@ -38,48 +60,49 @@ EXAMPLES.md
 README.zh.md
 ```
 
-The goal is a smaller repository centered on the **behavioral contract**, not multiple copies of the same rules for different tools.
+The fork is intentionally narrower: **one behavioral guideline set for my ChatGPT coding workflow**.
 
 ---
 
 ## Why Add Subagent Rules?
 
-The original four principles predate the current multi-agent workflow.
+The original guidelines focus mainly on how a single coding agent behaves.
 
-Delegation introduces two additional failure modes:
+Modern ChatGPT coding workflows can also delegate work to subagents, which introduces another class of mistakes:
 
-1. **Parallelizing work that is actually sequential**
-2. **Using an unnecessarily expensive model for a bounded subtask**
+1. parallelizing work that is actually sequential;
+2. delegating without enough context;
+3. spawning an unnecessarily capable model for simple investigation;
+4. accepting subagent output without verification.
 
-During development of this fork, I observed a GPT-5.6 Sol root agent spawn another **GPT-5.6 Sol at high reasoning effort** primarily to explore the codebase.
+One concrete behavior that motivated this section was seeing a **GPT-5.6 Sol root agent spawn another GPT-5.6 Sol at high reasoning effort primarily to explore a codebase**.
 
-That worked, but codebase discovery was a bounded task that did not necessarily require another Sol instance.
+That worked, but the delegated job was bounded enough that a cheaper GPT-5.6 model could likely have handled it.
 
 > [!IMPORTANT]
-> This is an **observed orchestration failure**, not a documented OpenAI default.
+> That Sol → Sol behavior is **my observation**, not a documented OpenAI default.
 
-The new subagent rules are intended to prevent that class of waste.
+### What OpenAI Documents
 
-### What OpenAI Actually Documents
+OpenAI documents GPT-5.6 as supporting **multi-agent execution**, including concurrent subagents whose results can be synthesized into the parent request.[^gpt56-multiagent]
 
-OpenAI documents that GPT-5.6 supports **multi-agent execution**, including concurrent subagents whose results can be synthesized into one request.[^gpt56-multiagent]
+OpenAI's model guidance also notes that delegation behavior should be explicitly prompted when the model delegates less often than desired.[^model-guidance]
 
-OpenAI's current model guidance also says that delegation can happen **less often than desired** unless the harness explicitly specifies when and how subagents should be used.[^model-guidance]
+GPT-6 Astra is separately described as being trained to divide work and delegate it to parallel subagents.[^model-guidance]
 
-For GPT-6 Astra specifically, OpenAI states that the model is trained to divide work and delegate it to parallel subagents.[^model-guidance]
+OpenAI does **not** document GPT-5.6 subagents as being unavailable or blocked by default.
 
-> [!NOTE]
-> OpenAI does **not** document GPT-5.6 subagents as "blocked by default."
->
-> This fork therefore treats delegation as an **orchestration policy that should be stated explicitly**, rather than assuming a particular hidden default.
+For that reason, this fork treats subagent behavior as something that should be **explicitly orchestrated**, rather than relying on implicit model behavior.
 
 ---
 
 ## Linear vs. Parallel Work
 
-These are **project terms**, not OpenAI model terminology.
+These are terms used by this project to make delegation decisions.
 
-A task is **linear** when a later step materially depends on the result of an earlier step:
+### Linear
+
+A task is **linear** when a later step materially depends on an earlier result:
 
 ```text
 A → B → C
@@ -88,12 +111,14 @@ A → B → C
 Examples:
 
 ```text
-reproduce bug → determine cause → implement fix → verify fix
+reproduce bug → identify cause → implement fix
 inspect API → understand contract → implement integration
 change abstraction → migrate callers → remove old path
 ```
 
-Do not split those stages into concurrent subagents.
+If `B` needs the result of `A`, they should not be concurrent subagents.
+
+### Parallelizable
 
 A task is **parallelizable** when independent branches can produce useful results without waiting on one another:
 
@@ -105,65 +130,56 @@ A ──────┼── C ──┼── E
 
 Examples:
 
-* inspect independent modules;
-* search several unrelated implementations;
+* inspect unrelated modules;
 * investigate independent hypotheses;
+* search separate implementations;
 * run independent test suites;
-* research separate APIs.
+* research unrelated APIs.
 
-The practical test is:
+The practical test:
 
-> **Can each subagent complete its assignment correctly without needing another concurrent subagent's result?**
+> **Can each subagent complete its assignment correctly without another concurrent subagent's result?**
 
 If not, keep the work serial.
 
 ---
 
-## Subagent Handoff
+## Subagent Context Handoff
 
-A subagent does not become useful merely because work was delegated to it.
+A subagent needs enough context to complete its assignment without rediscovering what the parent already knows.
 
-It needs enough context to perform the bounded task without rediscovering everything the parent already knows.
-
-Every delegation should provide:
+Every delegation should specify:
 
 ```text
 Goal:
-  Exact result the subagent should produce.
+  Exact outcome to achieve.
 
 Context:
   Relevant files, modules, behavior, errors, and conclusions
-  already established by the parent.
+  already established.
 
 Constraints:
-  Scope boundaries, repository rules, and things that must
-  not change.
+  Scope boundaries, project rules, and things that must not change.
 
 Output:
-  Exact information or change expected from the subagent.
+  Exact information or change expected.
 
 Verify:
-  How the parent can determine whether the result is correct.
+  How the result can be checked.
 ```
 
-### Minimum Sufficient Context
+The target is **minimum sufficient context**.
 
-The goal is not maximum context.
+Too little context causes guessing and duplicated investigation.
 
-The goal is **minimum sufficient context**.
-
-Too little context causes rediscovery, incorrect assumptions, and duplicated work.
-
-Too much unrelated context wastes tokens and can obscure the actual task.
+Too much unrelated context wastes tokens and makes the actual task harder to identify.
 
 ```mermaid
 flowchart LR
-    A[Parent task] --> B{Independent subtask?}
-
+    A[Parent task] --> B{Independent?}
     B -- No --> C[Keep in root agent]
-    B -- Yes --> D[Define bounded goal]
-
-    D --> E[Pass relevant context]
+    B -- Yes --> D[Define exact goal]
+    D --> E[Provide relevant context]
     E --> F[State constraints]
     F --> G[Specify output]
     G --> H[Specify verification]
@@ -174,123 +190,229 @@ flowchart LR
 
 ## GPT-5.6 Model Routing
 
-OpenAI currently describes the GPT-5.6 family as three capability/cost tiers:
+OpenAI currently provides three GPT-5.6 tiers relevant to this workflow:
 
-* **Sol** — flagship model for complex professional work.[^sol]
-* **Terra** — balances intelligence and cost.[^terra]
-* **Luna** — optimized for cost-sensitive, high-volume workloads and described elsewhere by OpenAI as fast and economical for focused or repetitive work.[^luna][^usage]
+| Model             | OpenAI positioning                                         |
+| ----------------- | ---------------------------------------------------------- |
+| **GPT-5.6 Sol**   | Flagship GPT-5.6 model for complex professional work[^sol] |
+| **GPT-5.6 Terra** | Balance of intelligence and cost[^terra]                   |
+| **GPT-5.6 Luna**  | Cost-sensitive, high-volume workloads[^luna]               |
 
-All three GPT-5.6 API model pages currently list reasoning efforts including `high`, `xhigh`, and `max`.[^sol][^terra][^luna]
+The following routing policy is **my convention**, not an OpenAI-prescribed algorithm.
 
-> [!IMPORTANT]
-> The routing rules below are **this project's policy**, not an OpenAI-prescribed routing algorithm.
-
-### Recommended Routing
-
-| Model                              | Use it for                                                                                                                                             |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GPT-5.6 Luna `high` / `xhigh`**  | Codebase exploration, locating symbols, inspecting call sites, extracting information, reading tests/logs, narrow reviews, other bounded investigation |
-| **GPT-5.6 Terra `high` / `xhigh`** | Routine implementation or analysis that exceeds Luna but does not require flagship reasoning                                                           |
-| **GPT-5.6 Sol**                    | Root-agent work, ambiguous debugging, architecture, difficult implementation, cross-cutting changes, synthesis, high-consequence decisions             |
-
-The default escalation path is:
+### My Default
 
 ```mermaid
 flowchart LR
-    A[Bounded subtask] --> L[Luna]
-    L -->|insufficient| T[Terra]
+    A[Bounded subtask] --> L[Luna high / xhigh]
+    L -->|insufficient| T[Terra high / xhigh]
     T -->|insufficient| S[Sol]
 ```
 
-Do **not** automatically use the root agent's model for every child.
+**Luna** is my default for bounded delegated work such as:
 
-A Sol root does not imply a Sol subagent.
+* exploring a codebase;
+* locating symbols and call sites;
+* reading tests or logs;
+* documentation lookup;
+* collecting implementation details;
+* narrow reviews;
+* other focused investigation.
 
-Likewise, using Luna only makes sense when the task is:
+**Terra** is the middle step when Luna is insufficient but the work does not justify Sol.
 
-* tightly scoped;
-* supplied with sufficient context;
-* straightforward to verify;
-* low-cost to retry or escalate.
+**Sol** remains appropriate for:
 
-### Why Luna Is Useful Here
+* architecture;
+* ambiguous debugging;
+* difficult implementation decisions;
+* cross-cutting modifications;
+* synthesis of conflicting findings;
+* high-consequence work.
 
-OpenAI describes GPT-5.6 Luna as the fastest and lowest-cost GPT-5.6 tier in its ChatGPT documentation and as a model for cost-sensitive, high-volume workloads in its API documentation.[^chatgpt56][^luna]
+A Sol root agent therefore does **not** imply Sol subagents.
 
-Its API model page also explicitly supports higher reasoning settings, including `high` and `xhigh`.[^luna]
+The desired rule is:
 
-That makes Luna a reasonable **project default for bounded delegated investigation**.
+> **Use the least expensive model that can reliably complete the bounded task, then escalate when necessary.**
 
-It does **not** imply that Luna is always sufficient.
+OpenAI describes Luna as the fastest/lowest-cost GPT-5.6 option in its ChatGPT documentation and as optimized for cost-sensitive, high-volume workloads in its API documentation.[^chatgpt56][^luna]
 
-Escalate when:
-
-* architectural judgment appears;
-* important ambiguity remains;
-* the child cannot reach a defensible conclusion;
-* the result is expensive or difficult to verify;
-* the work becomes cross-cutting;
-* mistakes would have significant consequences.
+The official model pages also document higher reasoning-effort options for the GPT-5.6 family.[^sol][^terra][^luna]
 
 ---
 
-## Where Does Astra Fit?
+## Commit Workflow
 
-GPT-6 Astra is **not the focus of this fork's routing policy**.
+The fork also codifies how I want coding agents to finish changes.
 
-OpenAI describes Astra as its most capable model for coding, research, analysis, and complex problem solving.[^usage]
+The goal is not merely to produce a valid commit. The history should make it possible to understand **what changed, why it changed, and how it was verified before opening the diff**.
 
-Its model guidance also explicitly describes Astra as trained to divide work and delegate it to parallel subagents.[^model-guidance]
+### Commit Structure
 
-That makes Astra relevant for long-horizon or difficult orchestration, but it does not remove the need for explicit task decomposition and model selection when using the GPT-5.6 family.
-
-This fork is primarily concerned with making:
+Use a short **commit subject** followed by a useful **commit body** for non-trivial changes.
 
 ```text
-Sol / Terra / Luna
+<type>: <imperative summary>
+
+<description of what changed and why>
+
+<important implementation or scope details>
+
+Validation:
+- <check performed>
+- <check performed>
 ```
 
-behave efficiently inside multi-agent coding workflows.
+Example:
+
+```text
+feat: add model-aware subagent routing
+
+Define linear and parallelizable task shapes and require explicit
+context handoff before spawning subagents.
+
+Default bounded exploration work to GPT-5.6 Luna instead of blindly
+matching the parent model. Reserve Sol for ambiguous, cross-cutting,
+or high-consequence tasks.
+
+Also document the distinction between observed model behavior,
+OpenAI-documented behavior, and project-specific orchestration policy.
+
+Validation:
+- reviewed guideline consistency
+- verified OpenAI-specific claims against official documentation
+```
+
+### Subject
+
+The subject should be concise and useful when scanning history.
+
+Use repository-specific formatting rules when they exist. Otherwise use:
+
+```text
+feat:
+fix:
+docs:
+test:
+refactor:
+build:
+ci:
+chore:
+```
+
+with an imperative summary:
+
+```text
+fix: preserve query strings during language selection
+```
+
+The subject answers:
+
+> **What kind of change is this, and what did it accomplish?**
+
+### Body
+
+For non-trivial commits, the body should summarize the change well enough that someone can understand its intent and scope **without reading the implementation first**.
+
+It should answer, when relevant:
+
+* **What changed?**
+* **Why was it necessary?**
+* **What important design or behavioral decisions were made?**
+* **What part of the repository is affected?**
+* **What was deliberately left unchanged?**
+* **How was the result verified?**
+
+Do not merely restate the subject.
+
+Do not narrate the diff line by line.
+
+Prefer a concise description of the **behavioral change and reasoning behind it**.
+
+> [!TIP]
+> Think of the commit body as the index to the diff: after reading it, you should know what to look for and why those changes exist.
+
+For trivial changes, such as a typo or obvious one-line fix, a subject alone is sufficient.
+
+### Git Rules
+
+* Only commit changes related to the current task.
+* Keep commits self-contained.
+* Preserve a linear history.
+* Always specify the remote and branch when pushing:
+
+```bash
+git push origin <branch>
+```
+
+* Do not run `git log`, `rebase`, `merge`, or `force push` by default.
+* Do not include unrelated working-tree changes.
+* Do not commit test captures, temporary logs, generated `dist/` output, or unrelated binaries unless the repository explicitly requires them.
+
+Repository-specific instructions in `AGENTS.md`, `CLAUDE.md`, or equivalent documentation take precedence.
+
+The agent should not rewrite history or perform broader repository maintenance merely because it has access to Git.
 
 ---
 
 ## The Guidelines
 
-The original principles remain the foundation.
+The resulting behavioral model is:
 
-| Principle                 | Prevents                                                               |
-| ------------------------- | ---------------------------------------------------------------------- |
-| **Think Before Coding**   | Silent assumptions, hidden uncertainty, ignored tradeoffs              |
-| **Simplicity First**      | Overengineering, speculative abstractions, unnecessary configurability |
-| **Surgical Changes**      | Drive-by refactors and unrelated modifications                         |
-| **Goal-Driven Execution** | Vague completion criteria and unverified changes                       |
-| **Subagents**             | Bad decomposition, duplicated work, unnecessary model cost             |
-| **Commits**               | Unrelated changes, unsafe Git operations, incoherent history           |
+| Principle                 | Prevents                                                     |
+| ------------------------- | ------------------------------------------------------------ |
+| **Think Before Coding**   | Silent assumptions and hidden uncertainty                    |
+| **Simplicity First**      | Overengineering and speculative abstraction                  |
+| **Surgical Changes**      | Drive-by refactors and unrelated edits                       |
+| **Goal-Driven Execution** | Vague completion criteria                                    |
+| **Subagents**             | Bad decomposition, missing context, wasted model capability  |
+| **Commits**               | Opaque history, unrelated changes, and unsafe Git operations |
 
-The overall rule is:
+The overall rule:
 
-> **Give the agent a precise goal, constrain unnecessary behavior, and make success verifiable.**
+> **Give the agent a precise goal, enough context to solve it, clear scope boundaries, and a verifiable definition of success — then leave a commit that explains what was accomplished.**
 
 ---
 
 ## Source Discipline
 
-Claims about OpenAI model behavior in this README are intentionally limited to what can be supported by **official OpenAI documentation**.
+This README separates three kinds of claims:
 
-Observations from local use are labeled as observations.
+| Type                         | Meaning                                           |
+| ---------------------------- | ------------------------------------------------- |
+| **Official OpenAI behavior** | Supported by OpenAI documentation and cited below |
+| **Observed behavior**        | Something I encountered while using ChatGPT       |
+| **Project policy**           | A convention I deliberately chose for this fork   |
 
-Project recommendations are labeled as project policy.
-
-No claim about model behavior should be presented as an OpenAI guarantee unless the official documentation supports it.
+If an OpenAI-specific claim cannot be supported by official documentation, it should not be presented here as fact.
 
 ---
 
 ## References
 
-[^karpathy]: **Andrej Karpathy — observations on LLM coding behavior.** X post `2015883857489522876`. This is the original motivation for the four behavioral principles.
+[^karpathy]: **Andrej Karpathy — observations on LLM coding behavior.** X post `2015883857489522876`. Original motivation for the behavioral guidelines.
 
-[^upstream]: **forrestchang/andrej-karpathy-skills.** Original GitHub repository. See the upstream `CLAUDE.md` for the original four-rule implementation and its README for the original packaging.
+[^upstream]: **forrestchang/andrej-karpathy-skills.** Original GitHub repository from which this fork derives.
 
-[^gpt56-multiagent]: **OpenAI — “GPT-5.6: Frontier intelligence that scales with your ambition.”** Official GPT-5.6 launch article. See the **Availability and pricing** section, where OpenAI describes GPT-5.6 multi-agent support and concurrent subagents. Find it on `openai.com` under the GPT-5.6 launch article.
+[^gpt56-multiagent]: **OpenAI — “GPT-5.6: Frontier intelligence that scales with your ambition.”** Official GPT-5.6 launch article. See the discussion of multi-agent execution and concurrent subagents. Available on `openai.com`.
 
-[^model-guidance]: **OpenAI Developers — “Model guidance.”** See **Subagent delegation** and **Initiative and follow-through**. The page discusses prompting for dele
+[^model-guidance]: **OpenAI Developers — “Model guidance.”** See the sections covering subagent delegation and initiative/follow-through. Available in OpenAI Developers → **API docs → Guides → Model guidance**.
+
+[^chatgpt56]: **OpenAI Help Center — “GPT-5.6 and GPT-6 Pro in ChatGPT.”** Includes GPT-5.6 model availability and positioning. Search the OpenAI Help Center by the exact article title.
+
+[^sol]: **OpenAI Developers — “GPT-5.6 Sol Model.”** Official model reference. OpenAI Developers → **API docs → Models → GPT-5.6 Sol**.
+
+[^terra]: **OpenAI Developers — “GPT-5.6 Terra Model.”** Official model reference. OpenAI Developers → **API docs → Models → GPT-5.6 Terra**.
+
+[^luna]: **OpenAI Developers — “GPT-5.6 Luna Model.”** Official model reference. OpenAI Developers → **API docs → Models → GPT-5.6 Luna**.
+
+---
+
+## Attribution
+
+Based on [`forrestchang/andrej-karpathy-skills`](https://github.com/forrestchang/andrej-karpathy-skills) and the coding-agent observations that originally motivated that project.[^upstream][^karpathy]
+
+## License
+
+MIT
